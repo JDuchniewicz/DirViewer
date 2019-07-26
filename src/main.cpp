@@ -66,9 +66,9 @@ int main(int, char**)
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     // when adding crossplatformness, here we inject our dependency of Filesystem
-    std::unique_ptr<dv::IFileSystem> fileSystem;
+    std::shared_ptr<dv::IFileSystem> fileSystem;
     //ifdef Linux
-    fileSystem = std::make_unique<dv::UnixFileSystem>();
+    fileSystem = std::make_shared<dv::UnixFileSystem>();
     //initialize filesystem from external variables?
     dv::Application application(std::move(fileSystem));
 

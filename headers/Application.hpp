@@ -9,12 +9,12 @@ namespace dv
     class Application
     {
         public:
-            explicit Application(std::unique_ptr<IFileSystem> fs);
+            explicit Application(std::shared_ptr<IFileSystem> fs);
             ~Application();
             void Update();
 
         private:
-            std::unique_ptr<IFileSystem> fileSystem; 
+            std::shared_ptr<IFileSystem> fileSystem; 
             std::vector<std::unique_ptr<TreeController>> treeControllers;
     };
 }

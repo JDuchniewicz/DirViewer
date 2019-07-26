@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 #include "imgui.h"
+#include "IFileSystem.hpp"
 
 namespace dv
 {
@@ -11,13 +12,14 @@ namespace dv
     class TreeController
     {
         public:
-            TreeController(std::unique_ptr<Tree> tree);
+            explicit TreeController(std::weak_ptr<IFileSystem> fs);
             ~TreeController();
             void DrawTree();
+            void Update();
 
 
         private:
             std::unique_ptr<Tree> CurrentTree;
-            std::map<unsigned int, ImVec2> NodeLocations;
+            std::weak_ptr<IFileSystem> FileSystem;
     };
 }
