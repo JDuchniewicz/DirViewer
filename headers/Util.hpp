@@ -1,3 +1,5 @@
+#pragma once
+
 namespace dv
 {
     enum class EConnectionType

@@ -1,3 +1,5 @@
+#pragma once
+ 
 #include <map>
 #include <memory>
 #include "imgui.h"
@@ -9,8 +11,10 @@ namespace dv
     class TreeController
     {
         public:
-            TreeController();
+            TreeController(std::unique_ptr<Tree> tree);
             ~TreeController();
+            void DrawTree();
+
 
         private:
             std::unique_ptr<Tree> CurrentTree;
