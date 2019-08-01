@@ -14,8 +14,9 @@ namespace dv
             Node(const std::string& n, unsigned int i, EConnectionType ct);
             ~Node();
             void Reparent(Node* newParent);
+            void RemoveChild(Node* child);
 
-        private:
+//all fields public
             std::string Name; // name of current file
             unsigned int ID;
             EConnectionType ConnnectionType; 

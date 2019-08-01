@@ -25,3 +25,9 @@ void Node::Reparent(Node* newParent)
     }
     Parent = newParent;
 }
+
+void Node::RemoveChild(Node* child)
+{
+    auto it = std::find(Children.begin(), Children.end(), child);
+    Children.erase(it);
+}

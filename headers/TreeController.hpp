@@ -21,5 +21,6 @@ namespace dv
         private:
             std::unique_ptr<Tree> CurrentTree;
             std::weak_ptr<IFileSystem> FileSystem;
+            std::map<unsigned int, ImVec2> NodeLocations;
     };
 }

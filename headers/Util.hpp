@@ -11,7 +11,8 @@ namespace dv
         Normal = 0,
         Hidden,
         Future,
-        Removed
+        Removed,
+        Invisible,
     };
 
     static inline unsigned int GenerateID()
