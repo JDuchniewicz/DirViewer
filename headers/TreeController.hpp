@@ -8,6 +8,7 @@
 namespace dv
 {
     class Tree;
+    class Node;
     
     class TreeController
     {
@@ -15,6 +16,7 @@ namespace dv
             explicit TreeController(std::weak_ptr<IFileSystem> fs);
             ~TreeController();
             void DrawTree();
+            void DrawNode(Node* node, ImVec2 location) const;
             void Update();
 
 
@@ -22,5 +24,8 @@ namespace dv
             std::unique_ptr<Tree> CurrentTree;
             std::weak_ptr<IFileSystem> FileSystem;
             std::map<unsigned int, ImVec2> NodeLocations;
+            bool NeedsRedrawing = true;
+            
+            int screenX, screenY;
     };
 }

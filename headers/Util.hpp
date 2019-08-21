@@ -6,6 +6,7 @@ namespace dv
     {
         static unsigned int maxID = 0;
     }
+
     enum class EConnectionType
     {
         Normal = 0,

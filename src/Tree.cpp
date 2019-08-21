@@ -66,10 +66,12 @@ Node* Tree::FindNode(unsigned int ID)
     return nullptr;
 }
 
-std::vector<Node*> Tree::GetTreeLevelOrder() const
+TreeSpan Tree::GetTreeLevelOrder() const
 {
-    std::vector<Node*> nodeList;
+    TreeSpan currentSpan;
     std::queue<Node*> queue;
+    currentSpan.LevelNodeCount.push_back(1); //always one root node
+    int currentLevelNodesCount = 0;
     queue.push(Root);
     queue.push(Dummy);
     while(!queue.empty())
@@ -79,14 +81,22 @@ std::vector<Node*> Tree::GetTreeLevelOrder() const
         if(current == Dummy)
         {
             if(!queue.empty())
+            {
                 queue.push(Dummy);
+                currentSpan.LevelNodeCount.push_back(currentLevelNodesCount);
+                currentLevelNodesCount = 0;
+            }
         }
         else
         {
             for(const auto& child : current->Children)
+            {
                 queue.push(child);
+                ++currentLevelNodesCount;
+            }
         }
-        nodeList.push_back(current);
+        if(current != Dummy) //no need for dummy nodes in our tree anymore
+            currentSpan.Nodes.push_back(current);
     }
-    return nodeList;
+    return currentSpan;
 }
