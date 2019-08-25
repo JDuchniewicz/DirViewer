@@ -23,9 +23,9 @@ namespace dv
         private:
             std::unique_ptr<Tree> CurrentTree;
             std::weak_ptr<IFileSystem> FileSystem;
-            std::map<unsigned int, ImVec2> NodeLocations;
+            std::map<Node*, ImVec2> NodeLocations;
             bool NeedsRedrawing = true;
             
-            int screenX, screenY;
+            float screenX = 0.0f, screenY = 1.0f;
     };
 }

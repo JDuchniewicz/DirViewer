@@ -8,7 +8,6 @@
 // Include glfw3.h after our OpenGL definitions
 #include <GLFW/glfw3.h>
 
-// My own classes (for now some stupid inteliisense bottlenecks)
 #include "IFileSystem.hpp"
 #include "UnixFileSystem.hpp"
 #include "Application.hpp"
@@ -61,7 +60,7 @@ int main(int, char**)
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Our state
-    bool show_demo_window = true;
+    bool show_demo_window = false;
     bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 

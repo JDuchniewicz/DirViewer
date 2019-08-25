@@ -71,7 +71,7 @@ TreeSpan Tree::GetTreeLevelOrder() const
     TreeSpan currentSpan;
     std::queue<Node*> queue;
     currentSpan.LevelNodeCount.push_back(1); //always one root node
-    int currentLevelNodesCount = 0;
+    size_t currentLevelNodesCount = 0;
     queue.push(Root);
     queue.push(Dummy);
     while(!queue.empty())

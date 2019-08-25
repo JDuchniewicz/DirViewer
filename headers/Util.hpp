@@ -20,5 +20,8 @@ namespace dv
     {
         return ++maxID;
     }
+
+    constexpr auto screenSizeX = 1280;
+    constexpr auto screenSizeY = 720;
 };
 

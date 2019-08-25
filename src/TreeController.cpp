@@ -4,6 +4,8 @@
 #include "imgui.h"
 #include <cstdlib>
 
+#include <iostream>
+
 using namespace dv;
 
 TreeController::TreeController(std::weak_ptr<IFileSystem> fs) : FileSystem(fs)
@@ -25,8 +27,8 @@ TreeController::TreeController(std::weak_ptr<IFileSystem> fs) : FileSystem(fs)
 
     //first draw should assign locations of nodes, subsequent redraws, will only update map and redraw
     NeedsRedrawing = true;
-    screenX = ImGui::GetWindowWidth();
-    screenY = ImGui::GetWindowHeight();
+    screenX = screenSizeX;
+    screenY = screenSizeY;
 }
 
 TreeController::~TreeController()
@@ -36,19 +38,25 @@ TreeController::~TreeController()
 
 void TreeController::Update()
 {
-    //for now update each frame, very costly
+    // Needs redrawing when:
+    // 1. app size changes
+    // 2. user collapses/expands node
+    // 3. user moves/deletes/adds node
+    // here mouse dragging needs to be taken into account
+    // during drag only dragged node is being redrawn and when it is released it has to be reparented etc
     if(NeedsRedrawing) //FIXME:
         DrawTree();
+    else //consider parenting everything to a big window for ease of tab switching
+        for(const auto& [node, location] : NodeLocations)
+            DrawNode(node, location);
+    
 }
 
-void TreeController::DrawTree()
+void TreeController::DrawTree()//rename do ReDrawTree - because it reconstructs localizations etc
 {
-    //tree needs smart drawing, with relative offsets from root, and growing with depth, 
-    // where to store locations    
     TreeSpan treeSpan = CurrentTree->GetTreeLevelOrder();
     if(treeSpan.Nodes.empty())
         return;
-    
 
     // This is currently not the best way to do it
     // find maximal width of tree (distance between lowest leftmost and righmost node) (HOW??)
@@ -60,52 +68,73 @@ void TreeController::DrawTree()
     //How to draw? (depending on children amount adjust distance between nodes) (each height jump adjust current drawing height)o
 
     //calculate drawing constants
-    float verticalOffset = std::max((std::max(screenY - 50.0f, 0.0f)) / treeSpan.LevelNodeCount.size(), 10.0f); //set it to 10.0f(later set up reasonable constants calculated from window size!!!!) TODO:
+    float verticalOffset = std::max((std::max(screenY * 0.65f, 0.0f)) / treeSpan.LevelNodeCount.size(), 50.0f); //set it to 10.0f(later set up reasonable constants calculated from window size!!!!) TODO:
 
     ImVec2 current { screenX / 2.0f, 0 + verticalOffset }; 
     int currentParentIndex = 0;
     Node* root = treeSpan.Nodes.at(0);
     DrawNode(root, current); //draw root node
-    NodeLocations.emplace(root->ID, current);
+    NodeLocations.emplace(root, current);
     current.y += verticalOffset;
 
     //iterate through all nodes at higher level and draw each of their children with proper distance
-    for(int i = 0; i < treeSpan.LevelNodeCount.size() - 1; ++i)
+    for(size_t i = 0; i < treeSpan.LevelNodeCount.size() - 1; ++i)
     {
-        float horizontalOffset = std::max((std::max(screenX - 50.0f, 0.0f)) / treeSpan.LevelNodeCount.at(i + 1), 10.0f); //calculate for next level
+        float horizontalOffset = std::max((std::max(screenX * 0.65f, 0.0f)) / treeSpan.LevelNodeCount.at(i + 1), 50.0f); //calculate for next level
+        std::cout << "horizontal offset" << horizontalOffset <<std::endl;
         //find parent node position and nr of children and adjust this nodes position accordingly
-        //potentially complex offset logic ahead
-        for(int j = 0; j < treeSpan.LevelNodeCount.at(i); ++j)
+        for(size_t j = 0; j < treeSpan.LevelNodeCount.at(i); ++j)
         {
             Node* parent = treeSpan.Nodes.at(currentParentIndex + j);
-            ImVec2 parentPos = NodeLocations.at(parent->ID); //TODO: think if this can be optimised?
+            ImVec2 parentPos = NodeLocations.at(parent); //TODO: think if this can be optimised?
             float childOffset = 0.0f;
             if(parent->Children.size() % 2 == 0)
                 childOffset = -( -0.5f + (parent->Children.size() / 2.0f)) * horizontalOffset; //leftmost horizontal offset (starts negative)
-            else
+            else if(parent->Children.size() > 1)
                 childOffset = -(parent->Children.size() / 2.0f) * horizontalOffset;
 
+            std::cout << "i: " << i << " j: " << j << " child offset: " << childOffset << " parent position x: " << parentPos.x << " y: " << parentPos.y << std::endl;
             ImVec2 childPos = parentPos;
+            childPos.x -= std::abs(childOffset);
             childPos.y += verticalOffset;
             for(const auto& child : parent->Children)
             {
-                childPos.x += childOffset;
                 //parentPos += ImVec2(verticalOffset, childOffset); Consider overloading ImVec2 for custom class with operators
+                std::cout << "Drawing node: " << child->Name << " with location x: " << childPos.x << " y: " << childPos.y << std::endl;
                 DrawNode(child, childPos);
-                NodeLocations.emplace(child->ID, childPos);
-                childOffset += horizontalOffset;
+                NodeLocations.emplace(child, childPos);
+                childPos.x += horizontalOffset;
             }
         }
         currentParentIndex += treeSpan.LevelNodeCount.at(i); //add number of processed parent nodes
     }
+    NeedsRedrawing = false;
 }
 
 void TreeController::DrawNode(Node* node, ImVec2 location) const
 {
-    //For now fix positions in middle of screen
-    ImGui::Begin("Main");
-    ImGui::Button("Dupa");
-    //draw whole nodes and test it
+    float buttonRadius = 30.0f; //TODO: tweak it?
+    location.x -= buttonRadius;
+    location.y -= buttonRadius;
+    ImGui::SetNextWindowPos(location); // TODO: if already has position when dragged, update its position
+    ImGui::Begin(node->Name.c_str(), nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
 
+    ImVec2 buttonSize = ImGui::CalcTextSize(node->Name.c_str());
+    buttonSize.x *= 2;
+    buttonSize.y *= 2;
+
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 25.0f);
+    //ImGui::SetCursorPos(location);
+    if(ImGui::Button(node->Name.c_str(), buttonSize)) //debug
+    {
+        std::cout << node->Name << std::endl;
+    }
+
+    //ImGui::Text("ID: %d", node->ID);
+    //ImGui::Text("X: %f, Y: %f", location.x, location.y);
+
+    ImGui::PopStyleVar();
     ImGui::End(); 
+
+    //add dragging, clicking handling later
 }

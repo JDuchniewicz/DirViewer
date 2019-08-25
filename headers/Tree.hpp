@@ -19,7 +19,7 @@ namespace dv
         TreeSpan(){};
 
         std::vector<Node*> Nodes;
-        std::vector<int> LevelNodeCount; //holds count of total node at this level (counting from root)
+        std::vector<size_t> LevelNodeCount; //holds count of total node at this level (counting from root)
     };
 
     class Tree

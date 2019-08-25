@@ -8,7 +8,7 @@ SOURCES += libs/imgui/imgui.cpp libs/imgui/imgui_draw.cpp libs/imgui/imgui_widge
 
 OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
 
-CXXFLAGS = -Ilibs/imgui/ -Iheaders/ -g -Wall -Wformat
+CXXFLAGS = -Ilibs/imgui/ -Iheaders/ -g -Wall -Wformat -std=c++17
 LIBS = 
 
 # Using OpenGL loader gl3w
