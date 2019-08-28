@@ -23,5 +23,7 @@ namespace dv
 
     constexpr auto screenSizeX = 1280;
     constexpr auto screenSizeY = 720;
+    unsigned int nodeColor;
+    unsigned int lineColor;
 };
 

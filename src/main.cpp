@@ -62,7 +62,7 @@ int main(int, char**)
     // Our state
     bool show_demo_window = false;
     bool show_another_window = false;
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    ImVec4 clear_color = ImVec4(0.88f, 0.96f, 0.97f, 1.00f);
 
     // when adding crossplatformness, here we inject our dependency of Filesystem
     std::shared_ptr<dv::IFileSystem> fileSystem;

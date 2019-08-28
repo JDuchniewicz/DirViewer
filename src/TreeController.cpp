@@ -25,10 +25,12 @@ TreeController::TreeController(std::weak_ptr<IFileSystem> fs) : FileSystem(fs)
     CurrentTree->AddNode(new Node("five", GenerateID(), EConnectionType::Normal), oneID);
     CurrentTree->AddNode(new Node("six", GenerateID(), EConnectionType::Normal), threeID);
 
-    //first draw should assign locations of nodes, subsequent redraws, will only update map and redraw
+    //first draw should assign states of nodes, subsequent redraws, will only update map and redraw
     NeedsRedrawing = true;
     screenX = screenSizeX;
     screenY = screenSizeY;
+    nodeColor = 0x2A2DF8;
+    lineColor = 0xe02af8b; //this color is visible, however shittily, tweak it!
 }
 
 TreeController::~TreeController()
@@ -38,21 +40,27 @@ TreeController::~TreeController()
 
 void TreeController::Update()
 {
+    ImGui::SetNextWindowPos({0.0f, 0.0f});
+    ImGui::SetNextWindowSize({screenX, screenY});
+    ImGui::Begin("MainWindow", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs);
     // Needs redrawing when:
-    // 1. app size changes
+    // 1. app size changes (change needs to be propagated from glfw/imgui)
     // 2. user collapses/expands node
     // 3. user moves/deletes/adds node
     // here mouse dragging needs to be taken into account
     // during drag only dragged node is being redrawn and when it is released it has to be reparented etc
     if(NeedsRedrawing) //FIXME:
-        DrawTree();
-    else //consider parenting everything to a big window for ease of tab switching
-        for(const auto& [node, location] : NodeLocations)
-            DrawNode(node, location);
-    
+        RedrawTree();
+    else 
+        for(const auto& [node, state] : NodeStates)
+            DrawNode(node, state.Position);
+        
+    //Probably push list of nodes that need to be redrawn
+    DrawTreeConnections();
+    ImGui::End();
 }
 
-void TreeController::DrawTree()//rename do ReDrawTree - because it reconstructs localizations etc
+void TreeController::RedrawTree()//rename do ReDrawTree - because it reconstructs localizations etc
 {
     TreeSpan treeSpan = CurrentTree->GetTreeLevelOrder();
     if(treeSpan.Nodes.empty())
@@ -74,7 +82,7 @@ void TreeController::DrawTree()//rename do ReDrawTree - because it reconstructs 
     int currentParentIndex = 0;
     Node* root = treeSpan.Nodes.at(0);
     DrawNode(root, current); //draw root node
-    NodeLocations.emplace(root, current);
+    NodeStates.emplace(root, NodeState{current});
     current.y += verticalOffset;
 
     //iterate through all nodes at higher level and draw each of their children with proper distance
@@ -86,7 +94,7 @@ void TreeController::DrawTree()//rename do ReDrawTree - because it reconstructs 
         for(size_t j = 0; j < treeSpan.LevelNodeCount.at(i); ++j)
         {
             Node* parent = treeSpan.Nodes.at(currentParentIndex + j);
-            ImVec2 parentPos = NodeLocations.at(parent); //TODO: think if this can be optimised?
+            ImVec2 parentPos = NodeStates.at(parent).Position; //TODO: think if this can be optimised?
             float childOffset = 0.0f;
             if(parent->Children.size() % 2 == 0)
                 childOffset = -( -0.5f + (parent->Children.size() / 2.0f)) * horizontalOffset; //leftmost horizontal offset (starts negative)
@@ -102,7 +110,7 @@ void TreeController::DrawTree()//rename do ReDrawTree - because it reconstructs 
                 //parentPos += ImVec2(verticalOffset, childOffset); Consider overloading ImVec2 for custom class with operators
                 std::cout << "Drawing node: " << child->Name << " with location x: " << childPos.x << " y: " << childPos.y << std::endl;
                 DrawNode(child, childPos);
-                NodeLocations.emplace(child, childPos);
+                NodeStates.emplace(child, NodeState{childPos});
                 childPos.x += horizontalOffset;
             }
         }
@@ -111,9 +119,23 @@ void TreeController::DrawTree()//rename do ReDrawTree - because it reconstructs 
     NeedsRedrawing = false;
 }
 
+void TreeController::DrawTreeConnections() const
+{
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    for(const auto& [node, state] : NodeStates)
+    {
+        for(const auto& child : node->Children)
+        {
+            ImVec2 childLocation = NodeStates.at(child).Position;
+            //change line colour to connectionType
+            drawList->AddLine(state.Position, childLocation, lineColor, 11.0f);
+        }
+    }
+}
+
 void TreeController::DrawNode(Node* node, ImVec2 location) const
 {
-    float buttonRadius = 30.0f; //TODO: tweak it?
+    float buttonRadius = 30.0f; //TODO: tweak it
     location.x -= buttonRadius;
     location.y -= buttonRadius;
     ImGui::SetNextWindowPos(location); // TODO: if already has position when dragged, update its position
@@ -125,7 +147,7 @@ void TreeController::DrawNode(Node* node, ImVec2 location) const
 
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 25.0f);
     //ImGui::SetCursorPos(location);
-    if(ImGui::Button(node->Name.c_str(), buttonSize)) //debug
+    if(ImGui::Button(node->Name.c_str(), buttonSize)) //if rightclicked display context menu
     {
         std::cout << node->Name << std::endl;
     }
@@ -137,4 +159,10 @@ void TreeController::DrawNode(Node* node, ImVec2 location) const
     ImGui::End(); 
 
     //add dragging, clicking handling later
+}
+
+void TreeController::DrawContextMenu(Node* node, ImVec2 nodeLocation) const
+{
+    // We want to draw context menu only when node has been rightclicked and keep it open until user clicks somewhere else or selects one option
+    // then perform correct operation on node reparenting it when done
 }
