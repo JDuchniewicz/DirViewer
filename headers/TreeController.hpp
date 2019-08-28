@@ -18,7 +18,7 @@ namespace dv
             ~TreeController();
             void RedrawTree();
             void DrawTreeConnections() const;
-            void DrawNode(Node* node, ImVec2 location) const;
+            void DrawNode(Node* node, NodeState& state);
             void DrawContextMenu(Node* node, ImVec2 nodeLocation) const;
             void Update();
 

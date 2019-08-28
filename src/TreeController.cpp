@@ -52,8 +52,8 @@ void TreeController::Update()
     if(NeedsRedrawing) //FIXME:
         RedrawTree();
     else 
-        for(const auto& [node, state] : NodeStates)
-            DrawNode(node, state.Position);
+        for(auto& [node, state] : NodeStates)
+            DrawNode(node, state);
         
     //Probably push list of nodes that need to be redrawn
     DrawTreeConnections();
@@ -81,8 +81,9 @@ void TreeController::RedrawTree()//rename do ReDrawTree - because it reconstruct
     ImVec2 current { screenX / 2.0f, 0 + verticalOffset }; 
     int currentParentIndex = 0;
     Node* root = treeSpan.Nodes.at(0);
-    DrawNode(root, current); //draw root node
-    NodeStates.emplace(root, NodeState{current});
+    NodeState rootState {current};
+    DrawNode(root, rootState); //draw root node
+    NodeStates.emplace(root, rootState);
     current.y += verticalOffset;
 
     //iterate through all nodes at higher level and draw each of their children with proper distance
@@ -109,8 +110,9 @@ void TreeController::RedrawTree()//rename do ReDrawTree - because it reconstruct
             {
                 //parentPos += ImVec2(verticalOffset, childOffset); Consider overloading ImVec2 for custom class with operators
                 std::cout << "Drawing node: " << child->Name << " with location x: " << childPos.x << " y: " << childPos.y << std::endl;
-                DrawNode(child, childPos);
-                NodeStates.emplace(child, NodeState{childPos});
+                NodeState childState {childPos};
+                DrawNode(child, childState);
+                NodeStates.emplace(child, childState);
                 childPos.x += horizontalOffset;
             }
         }
@@ -133,9 +135,10 @@ void TreeController::DrawTreeConnections() const
     }
 }
 
-void TreeController::DrawNode(Node* node, ImVec2 location) const
+void TreeController::DrawNode(Node* node, NodeState& state)
 {
     float buttonRadius = 30.0f; //TODO: tweak it
+    ImVec2 location = state.Position;
     location.x -= buttonRadius;
     location.y -= buttonRadius;
     ImGui::SetNextWindowPos(location); // TODO: if already has position when dragged, update its position
@@ -147,10 +150,31 @@ void TreeController::DrawNode(Node* node, ImVec2 location) const
 
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 25.0f);
     //ImGui::SetCursorPos(location);
-    if(ImGui::Button(node->Name.c_str(), buttonSize)) //if rightclicked display context menu
+    ImGui::Button(node->Name.c_str(), buttonSize);
+    /* //mouse dragging is sligthly more complex
+    if(ImGui::IsItemClicked(0))
     {
-        std::cout << node->Name << std::endl;
+        state.IsDragged = true;
+        std::cout << node->Name << " state is dragged: " << state.IsDragged<<std::endl;
     }
+    else
+    {
+        state.IsDragged = false;
+    }
+    */
+    
+
+    if(ImGui::IsItemClicked(1))
+    {
+        if(!state.IsRClicked) //show 
+        {
+
+            state.IsRClicked = true;
+        } else //collapse
+            state.IsRClicked = false;
+        std::cout << node->Name << " state: " << state.IsRClicked<<std::endl;
+    }
+
 
     //ImGui::Text("ID: %d", node->ID);
     //ImGui::Text("X: %f, Y: %f", location.x, location.y);
