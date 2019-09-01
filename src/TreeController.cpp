@@ -1,17 +1,21 @@
 #include "TreeController.hpp"
 #include "Tree.hpp"
 #include "Node.hpp"
+#include "Entry.hpp"
 #include "imgui.h"
 #include <cstdlib>
 
-#include <iostream>
+#include <iostream> //for debug
 
 using namespace dv;
 
-TreeController::TreeController(std::weak_ptr<IFileSystem> fs) : FileSystem(fs)
+#define DUMMY = 1;
+
+TreeController::TreeController(std::weak_ptr<IFileSystem> fs, unsigned int index) : FileSystem(fs), Index(index)
 {
     //get all data for tree from filesystem
     //for now just create dummy
+    #ifdef DUMMY
     unsigned int rootID = GenerateID();
     CurrentTree = std::make_unique<Tree>(new Node("root", rootID, EConnectionType::Normal));
     unsigned int oneID = GenerateID();
@@ -24,6 +28,14 @@ TreeController::TreeController(std::weak_ptr<IFileSystem> fs) : FileSystem(fs)
     CurrentTree->AddNode(new Node("four", fourID, EConnectionType::Normal), rootID);
     CurrentTree->AddNode(new Node("five", GenerateID(), EConnectionType::Normal), oneID);
     CurrentTree->AddNode(new Node("six", GenerateID(), EConnectionType::Normal), threeID);
+    #else
+
+
+    #endif
+
+    //debug checking fs
+    std::vector<Entry> systemEntries;
+    FileSystem.lock()->GetDataStartingFrom("./testDir", systemEntries, index);
 
     //first draw should assign states of nodes, subsequent redraws, will only update map and redraw
     NeedsRedrawing = true;
@@ -129,7 +141,8 @@ void TreeController::DrawTreeConnections() const
         for(const auto& child : node->Children)
         {
             ImVec2 childLocation = NodeStates.at(child).Position;
-            //change line colour to connectionType
+            EConnectionType connnectionType = child->ConnnectionType; //add different connection types
+            //change line colour to connectionType, moreover when lines are drawn they should pass through centre of whole node( needs to be calculated for each)
             drawList->AddLine(state.Position, childLocation, lineColor, 11.0f);
         }
     }
@@ -151,24 +164,24 @@ void TreeController::DrawNode(Node* node, NodeState& state)
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 25.0f);
     //ImGui::SetCursorPos(location);
     ImGui::Button(node->Name.c_str(), buttonSize);
-    /* //mouse dragging is sligthly more complex
+    //for now just single node dragging
     if(ImGui::IsItemClicked(0))
     {
         state.IsDragged = true;
-        std::cout << node->Name << " state is dragged: " << state.IsDragged<<std::endl;
     }
-    else
+    else if(state.IsDragged)
     {
-        state.IsDragged = false;
+        if(ImGui::IsMouseReleased(0))
+            state.IsDragged = false;
+        state.Position = ImGui::GetIO().MousePos;
     }
-    */
     
 
     if(ImGui::IsItemClicked(1))
     {
         if(!state.IsRClicked) //show 
         {
-
+            DrawContextMenu(node, location);
             state.IsRClicked = true;
         } else //collapse
             state.IsRClicked = false;
@@ -181,12 +194,11 @@ void TreeController::DrawNode(Node* node, NodeState& state)
 
     ImGui::PopStyleVar();
     ImGui::End(); 
-
-    //add dragging, clicking handling later
 }
 
 void TreeController::DrawContextMenu(Node* node, ImVec2 nodeLocation) const
 {
     // We want to draw context menu only when node has been rightclicked and keep it open until user clicks somewhere else or selects one option
     // then perform correct operation on node reparenting it when done
+
 }

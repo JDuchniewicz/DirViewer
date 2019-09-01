@@ -8,7 +8,7 @@ Application::Application(std::shared_ptr<IFileSystem> fs) : fileSystem(std::move
 {
     // parse current dir from filesystem and create nodes
     
-    treeControllers.push_back(std::make_unique<TreeController>(fileSystem));
+    treeControllers.push_back(std::make_unique<TreeController>(fileSystem, 0));
 
 }
 

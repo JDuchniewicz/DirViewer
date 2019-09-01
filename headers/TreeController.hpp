@@ -3,7 +3,7 @@
 #include <map>
 #include <memory>
 #include "imgui.h"
-#include "IFileSystem.hpp"
+#include "IFileSystem.hpp" 
 
 namespace dv
 {
@@ -14,7 +14,7 @@ namespace dv
     class TreeController
     {
         public:
-            explicit TreeController(std::weak_ptr<IFileSystem> fs);
+            explicit TreeController(std::weak_ptr<IFileSystem> fs, unsigned int index);
             ~TreeController();
             void RedrawTree();
             void DrawTreeConnections() const;
@@ -30,5 +30,6 @@ namespace dv
             bool NeedsRedrawing = true;
             
             float screenX = 0.0f, screenY = 0.0f;
+            unsigned int Index;
     };
 }

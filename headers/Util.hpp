@@ -16,6 +16,15 @@ namespace dv
         Invisible,
     };
 
+    enum class EFileType
+    {
+        File = 0,
+        Directory,
+        Symlink,
+        Special, //For "." and ".."
+        Other,
+    };
+
     static inline unsigned int GenerateID()
     {
         return ++maxID;
@@ -23,7 +32,7 @@ namespace dv
 
     constexpr auto screenSizeX = 1280;
     constexpr auto screenSizeY = 720;
-    unsigned int nodeColor;
-    unsigned int lineColor;
+    static unsigned int nodeColor; //for now it is static but should be probably handled on per-instance base
+    static unsigned int lineColor;
 };
 
