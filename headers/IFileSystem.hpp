@@ -1,18 +1,17 @@
 #pragma once
 
-#include "Entry.hpp"
 #include <string>
-#include <vector>
-#include <map>
+#include <memory>
 
 namespace dv
 {
+    class Tree;
     class IFileSystem
     {
         public:
         // Node pointer or file descriptor?
         // depth
-        virtual bool GetDataStartingFrom(const std::string& rootdirectory, std::vector<Entry>& entries, unsigned int callerIndex) = 0;
+        virtual int GetDataStartingFrom(const std::string& prefix, const std::string& rootName, std::unique_ptr<Tree>& outTree, unsigned int callerIndex) = 0;
 
         //Write current changes in filesystem tree hierarchy 
         virtual bool Write(unsigned int callerIndex) = 0;

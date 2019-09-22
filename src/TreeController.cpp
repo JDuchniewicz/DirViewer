@@ -1,7 +1,6 @@
 #include "TreeController.hpp"
 #include "Tree.hpp"
 #include "Node.hpp"
-#include "Entry.hpp"
 #include "imgui.h"
 #include <cstdlib>
 
@@ -17,25 +16,24 @@ TreeController::TreeController(std::weak_ptr<IFileSystem> fs, unsigned int index
     //for now just create dummy
     #ifdef DUMMY
     unsigned int rootID = GenerateID();
-    CurrentTree = std::make_unique<Tree>(new Node("root", rootID, EConnectionType::Normal));
+    CurrentTree = std::make_unique<Tree>(new Node("root", rootID, EConnectionType::Normal, EFileType::Directory));
     unsigned int oneID = GenerateID();
     unsigned int twoID = GenerateID();
     unsigned int threeID= GenerateID();
     unsigned int fourID= GenerateID();
-    CurrentTree->AddNode(new Node("one", oneID, EConnectionType::Normal), rootID);
-    CurrentTree->AddNode(new Node("two", twoID, EConnectionType::Normal), rootID);
-    CurrentTree->AddNode(new Node("three", threeID, EConnectionType::Normal), rootID);
-    CurrentTree->AddNode(new Node("four", fourID, EConnectionType::Normal), rootID);
-    CurrentTree->AddNode(new Node("five", GenerateID(), EConnectionType::Normal), oneID);
-    CurrentTree->AddNode(new Node("six", GenerateID(), EConnectionType::Normal), threeID);
+    CurrentTree->AddNode(new Node("one", oneID, EConnectionType::Normal, EFileType::Directory), rootID);
+    CurrentTree->AddNode(new Node("two", twoID, EConnectionType::Normal, EFileType::Directory), rootID);
+    CurrentTree->AddNode(new Node("three", threeID, EConnectionType::Normal, EFileType::Directory), rootID);
+    CurrentTree->AddNode(new Node("four", fourID, EConnectionType::Normal, EFileType::Directory), rootID);
+    CurrentTree->AddNode(new Node("five", GenerateID(), EConnectionType::Normal, EFileType::Directory), oneID);
+    CurrentTree->AddNode(new Node("six", GenerateID(), EConnectionType::Normal, EFileType::Directory), threeID);
     #else
 
 
     #endif
 
     //debug checking fs
-    std::vector<Entry> systemEntries;
-    FileSystem.lock()->GetDataStartingFrom("./testDir", systemEntries, index);
+    FileSystem.lock()->GetDataStartingFrom("./", "testDir", CurrentTree, index);
 
     //first draw should assign states of nodes, subsequent redraws, will only update map and redraw
     NeedsRedrawing = true;

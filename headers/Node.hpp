@@ -7,21 +7,10 @@
 
 namespace dv
 {
-    // each node has only one connection to itself
-    // hence storing node connection type in it
-    struct NodeState
-    {
-        NodeState(ImVec2 pos) : Position(pos) {};
-
-        ImVec2 Position;
-        bool IsRClicked = false;
-        bool IsDragged = false;
-    };
-
     class Node
     {
         public:
-            Node(const std::string& n, unsigned int i, EConnectionType ct);
+            Node(const std::string& name, unsigned int id, EConnectionType connT, EFileType fType, unsigned int size = 4096);
             ~Node();
             void Reparent(Node* newParent);
             void RemoveChild(Node* child);
@@ -30,6 +19,9 @@ namespace dv
             std::string Name; // name of current file
             unsigned int ID;
             EConnectionType ConnnectionType; 
+            EFileType Type;
+            //permissons?
+            unsigned int Size; //default size is 4096 for a directory(in bytes) //may be bigger than int?
             Node* Parent = nullptr;
             std::vector<Node*> Children;
     };

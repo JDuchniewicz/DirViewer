@@ -3,7 +3,7 @@
 
 using namespace dv;
 
-Node::Node(const std::string& n, unsigned int i, EConnectionType ct) : Name(n), ID(i), ConnnectionType(ct)
+Node::Node(const std::string& name, unsigned int id, EConnectionType connT, EFileType fType, unsigned int size) : Name(name), ID(id), ConnnectionType(connT), Type(fType)
 {
 
 }

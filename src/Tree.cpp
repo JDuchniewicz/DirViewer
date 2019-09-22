@@ -6,7 +6,7 @@ using namespace dv;
 
 Tree::Tree(Node* root) : Root(root)
 {
-    Dummy = new Node("", 0, EConnectionType::Invisible);
+    Dummy = new Node("", 0, EConnectionType::Invisible, EFileType::Invalid);
 }
 
 Tree::~Tree()
@@ -29,6 +29,12 @@ void Tree::AddNode(Node* node, unsigned int parentID)
         return;
     parent->Children.push_back(node);
     node->Reparent(parent);
+}
+
+void Tree::AddNode(Node* node, Node* parent)
+{
+   parent->Children.push_back(node);
+   node->Reparent(parent);
 }
 
 bool Tree::RemoveNode(unsigned int ID)
