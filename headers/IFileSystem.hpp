@@ -9,8 +9,7 @@ namespace dv
     class IFileSystem
     {
         public:
-        // Node pointer or file descriptor?
-        // depth
+        //TODO: document API
         virtual int GetDataStartingFrom(const std::string& prefix, const std::string& rootName, std::unique_ptr<Tree>& outTree, unsigned int callerIndex) = 0;
 
         //Write current changes in filesystem tree hierarchy 

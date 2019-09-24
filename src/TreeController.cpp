@@ -70,6 +70,7 @@ void TreeController::Update()
     ImGui::End();
 }
 
+//Needs to be drawn in a better way, with 2 levels of depth nodes are drawn outside of screen
 void TreeController::RedrawTree()//rename do ReDrawTree - because it reconstructs localizations etc
 {
     TreeSpan treeSpan = CurrentTree->GetTreeLevelOrder();
@@ -171,7 +172,7 @@ void TreeController::DrawNode(Node* node, NodeState& state)
     {
         if(ImGui::IsMouseReleased(0))
             state.IsDragged = false;
-        state.Position = ImGui::GetIO().MousePos;
+        state.Position = Clamp(ImGui::GetIO().MousePos);
     }
     
 

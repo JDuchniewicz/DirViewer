@@ -26,7 +26,6 @@ namespace dv
     {
         public:
             Tree(Node* root);
-            Tree(const Tree&& other);
             ~Tree();
             void AddNode(Node* node, unsigned int parentID); //for adding additional nodes only?, quite slow 
             void AddNode(Node* node, Node* parent); //for adding new nodes when parent node pointer is known

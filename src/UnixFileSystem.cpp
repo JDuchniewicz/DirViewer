@@ -5,6 +5,7 @@
 #include <iostream> // for debug
 #include <string>
 #include "dirent.h"
+#include "sys/stat.h"
 #include <cerrno>
 
 using namespace dv;
@@ -38,11 +39,18 @@ int UnixFileSystem::GetDataStartingFrom(const std::string& prefix, const std::st
         std::cout << "Read Directory with name: " << dirEntry->d_name << std::endl;
         Node* newNode = new Node(dirEntry->d_name, GenerateID(), EConnectionType::Normal, ConvertFileType(dirEntry->d_type));// add size
         createdTree->AddNode(newNode, root);
+        path = (rootPath + '/' + dirEntry->d_name);
         if(dirEntry->d_type == DT_DIR)
         {
-            path = (rootPath + '/' + dirEntry->d_name);
             std::cout << "Added directory with path: " << path <<std::endl;
             directoryQueue.push({newNode, path});
+        }
+        else
+        {
+            struct stat st;
+            stat(path.c_str(), &st);
+            std::cout << "Stat'ted file of size: " << st.st_size << std::endl;
+            newNode->Size = st.st_size;
         }
     }
 
@@ -82,6 +90,7 @@ int UnixFileSystem::GetDataStartingFrom(const std::string& prefix, const std::st
             if(dirEntry->d_type == DT_DIR)
             {
                 path = (currentDirectory.second + '/' + dirEntry->d_name);
+                std::cout << "Added directory with path: " << path <<std::endl;
                 directoryQueue.push({newNode, path});
             }
         }
@@ -91,7 +100,7 @@ int UnixFileSystem::GetDataStartingFrom(const std::string& prefix, const std::st
             return errno;
         }
     }
-     
+    outTree = std::move(createdTree); 
     
     return 0; //return status OK
 }
