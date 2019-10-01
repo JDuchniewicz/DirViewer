@@ -1,10 +1,10 @@
 #pragma once
 
 #include "IFileSystem.hpp"
+#include "Util.hpp"
 
 namespace dv
 {
-    enum class EFileType;
     class UnixFileSystem : public IFileSystem
     {
         public:
