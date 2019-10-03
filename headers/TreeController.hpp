@@ -16,7 +16,7 @@ namespace dv
         public:
             explicit TreeController(std::weak_ptr<IFileSystem> fs, unsigned int index); //TODO: think if index is needed
             ~TreeController();
-            void RedrawTree();
+            void RedrawTree(); // if calculations are too severe, maybe push redrawing logic to a different thread
             void DrawTreeConnections() const;
             void DrawNode(Node* node, NodeState& state);
             void DrawContextMenu(Node* node, NodeState& state, ImVec2 nodeLocation);
@@ -43,7 +43,6 @@ namespace dv
             std::weak_ptr<IFileSystem> FileSystem;
             std::unordered_map<Node*, NodeState> NodeStates; // IF this will be too much of a bottleneck, just store location in node lel
             bool NeedsRedrawing = true;
-            // when one node is expanded and we click another, we should collapse one currently clicked, hold this info somewhere
             
             float screenX = 0.0f, screenY = 0.0f;
             unsigned int Index;

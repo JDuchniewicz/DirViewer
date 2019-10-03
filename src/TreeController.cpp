@@ -115,8 +115,10 @@ void TreeController::RedrawTree()//rename do ReDrawTree - because it reconstruct
                 //parentPos += ImVec2(verticalOffset, childOffset); Consider overloading ImVec2 for custom class with operators
                 std::cout << "Drawing node: " << child->Name << " with location x: " << childPos.x << " y: " << childPos.y << std::endl;
                 NodeState childState {childPos};
+                auto emplaced = NodeStates.emplace(child, childState);
+                if(!emplaced.second)
+                    NodeStates.at(child) = childState;
                 DrawNode(child, childState);
-                NodeStates.emplace(child, childState);
                 childPos.x += horizontalOffset;
             }
         }
@@ -133,8 +135,8 @@ void TreeController::DrawTreeConnections() const
         for(const auto& child : node->Children)
         {
             auto childState = NodeStates.at(child);
-            if(childState.Flags & ENodeState_Hidden) // do not draw paths to hidden nodes
-                break;
+            if((childState.Flags & ENodeState_Hidden) || (childState.Flags & ENodeState_Detached)) // do not draw paths to hidden or detached nodes
+                continue;
             EConnectionType connnectionType = child->ConnnectionType; //add different connection types
             //change line colour to connectionType, moreover when lines are drawn they should pass through centre of whole node( needs to be calculated for each)
             drawList->AddLine(state.Position, childState.Position, lineColor, 11.0f);
@@ -144,24 +146,61 @@ void TreeController::DrawTreeConnections() const
 
 void TreeController::DrawNode(Node* node, NodeState& state)
 {
+    // WINDOW INPUT HANDLING SECTION
     if(state.Flags & ENodeState_Hidden)
         return;
     
+    auto windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground;
+    
+    //if detached, then position will be mousePosition 
+    // until node is attached again (by means of hovering it above its future parent)
+    // move all nodes the same amount as mouse moved
+    if(state.Flags & ENodeState_Detached)
+    {
+        windowFlags |= ImGuiWindowFlags_NoMouseInputs; // to prevent this window from overlapping underlying to-be-docked-to window
+        ImVec2 difference = ImGui::GetIO().MousePos - state.Position;
+        state.Position = Clamp(state.Position + difference);
+        // Move each child and clamp on leaving edge of screen //TODO: restore optimal position
+        // for optimal position, root distance from child has to be known and adjusted for each child independently
+        ProcessForEachSubNode(node, 
+                [&, this](Node* child){
+                    decltype(auto) childState = NodeStates.at(child);
+                    childState.Position = Clamp(childState.Position + difference);
+                });
+    }
+
+    // IMGUI DRAWING SECTION
     float buttonRadius = 30.0f; //TODO: tweak it
-    ImVec2 location = state.Position;
-    location.x -= buttonRadius;
-    location.y -= buttonRadius;
-    ImGui::SetNextWindowPos(Clamp(location)); // TODO: if already has position when dragged, update its position
-    ImGui::Begin(node->Name.c_str(), nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
+    auto location = state.Position - ImVec2{ buttonRadius, buttonRadius};
+    ImGui::SetNextWindowPos(Clamp(location));
+    ImGui::Begin(node->Name.c_str(), nullptr, windowFlags);
 
     ImVec2 buttonSize = ImGui::CalcTextSize(node->Name.c_str());
     buttonSize.x *= 1.5f;
-    buttonSize.y *= 1.5f;
+        buttonSize.y *= 1.5f;
 
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 25.0f);
-    //ImGui::SetCursorPos(location);
     ImGui::Button(node->Name.c_str(), buttonSize);
-    //for now just single node dragging
+
+    // BUTTON INPUT HANDLING SECTION
+    if(ImGui::IsItemHovered() && IsItemHoveredFor(HOVERING_PIN_DURATION))
+    {
+        std::cout << "Hovered: " << node->Name << std::endl;
+        auto it = std::find_if(NodeStates.begin(), NodeStates.end(), [&](auto&& nodeState)
+        {
+            return (nodeState.second.Flags & ENodeState_Detached);
+        });
+        if(it != NodeStates.end())
+        {
+            Node* toParent = it->first;
+            CurrentTree->AddNode(toParent, node);
+            it->second.Flags ^= ENodeState_Detached;
+            NeedsRedrawing = true;
+            // TODO: add filesystem call MOVE(from , to)
+        }
+    }
+
+    // node button like behaviour - being pressed and dragged around
     if(ImGui::IsItemClicked(0))
     {
         state.Flags |= ENodeState_Dragged;
@@ -173,23 +212,8 @@ void TreeController::DrawNode(Node* node, NodeState& state)
         state.Position = Clamp(ImGui::GetIO().MousePos);
     }
      
-    // Draw only if RClicked in this frame
-   // if(state.IsRClicked)
+   if(!(state.Flags & (ENodeState_Hidden | ENodeState_Detached)))
         DrawContextMenu(node, state, location);
-
-/* //seems to be not needed
-    if(ImGui::IsItemClicked(1))
-    {
-        if(!state.IsRClicked) //show 
-            state.IsRClicked = true;
-        else //collapse
-            state.IsRClicked = false;
-        std::cout << node->Name << " state: " << state.IsRClicked<<std::endl;
-    }
-    */
-
-    //ImGui::Text("ID: %d", node->ID);
-    //ImGui::Text("X: %f, Y: %f", location.x, location.y);
 
     ImGui::PopStyleVar();
     ImGui::End(); 
@@ -222,12 +246,13 @@ void TreeController::DrawContextMenu(Node* node, NodeState& state, ImVec2 nodeLo
                 state.Flags ^= ENodeState_Collapsed;
                 ProcessForEachSubNode(node, 
                 [this](Node* child){ NodeStates.at(child).Flags ^= ENodeState_Hidden; 
-                std::cout << "Expand Node: " << child->Name << std::endl;});
+                std::cout << "Expanding Node: " << child->Name << std::endl;});
             }
 
         }
         if(ImGui::Button("Move"))
         {
+            // for now only parent is detached, children are hidden
             state.Flags |= ENodeState_Detached;
         }
         if(ImGui::Button("Remove"))

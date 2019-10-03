@@ -1,6 +1,8 @@
 #pragma once
 #include "imgui.h"
+#include "imgui_internal.h"
 #include <algorithm>
+#include <iostream>
 
 namespace dv
 {
@@ -55,11 +57,19 @@ namespace dv
         return ++maxID;
     }
 
-    //consider writing a wrapper for 
     static inline ImVec2 Clamp(const ImVec2 vec) //TODO: add bounds and make clamping smart taking them into account
     {
         return ImVec2 { std::clamp(vec.x, 0.0f, screenSizeX), std::clamp(vec.y, 0.0f, screenSizeY) };
     }
+
+    // Hackish, as most things related to dragging in imgui
+    static inline bool IsItemHoveredFor(float duration) { return GImGui->HoveredIdTimer >= duration; }
+
+    inline auto operator+=(ImVec2& a, ImVec2 b) { a.x += b.x; a.y += b.y; }
+    inline auto operator-=(ImVec2& a, ImVec2 b) { a.x -= b.x; a.y -= b.y; }
+    inline auto operator-(ImVec2 a, ImVec2 b) { return ImVec2 { a.x - b.x, a.y - b.y }; }
+    inline auto operator+(ImVec2 a, ImVec2 b) { return ImVec2 { a.x + b.x, a.y + b.y }; }
+    inline std::ostream& operator<<(std::ostream& ostream, const ImVec2 a) { ostream<< "{ " << a.x << ", " << a.y << " }"; return ostream; }
 
     // each node has only one connection to itself
     // hence storing node connection type in it
@@ -68,11 +78,11 @@ namespace dv
     enum ENodeStateFlags
     {
         ENodeState_None             = 0,
-        ENodeState_RClicked         = 1 << 0,
-        ENodeState_Dragged          = 1 << 1,       
-        ENodeState_Collapsed        = 1 << 2,
-        ENodeState_Hidden           = 1 << 3,
-        ENodeState_Detached         = 1 << 4,
+        ENodeState_RClicked         = 1 << 0,           // Node right-clicked
+        ENodeState_Dragged          = 1 << 1,           // Node dragged
+        ENodeState_Collapsed        = 1 << 2,           // Node Collapsed (being a parent)
+        ENodeState_Hidden           = 1 << 3,           // Node Collapsed (being a child)
+        ENodeState_Detached         = 1 << 4,           // Node in a detached state (may be dragged but does not have to be)
     };
 
     inline constexpr auto operator|=(ENodeStateFlags& a, ENodeStateFlags b) { a = static_cast<ENodeStateFlags>(a | b); }
@@ -93,5 +103,8 @@ namespace dv
 
     static unsigned int nodeColor; //for now it is static but should be probably handled on per-instance base
     static unsigned int lineColor;
+
+    constexpr float HOVERING_PIN_DURATION = 1.5f;
 };
+// TODO: wrap into some util namespace
 

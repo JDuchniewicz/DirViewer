@@ -25,7 +25,7 @@ int UnixFileSystem::GetDataStartingFrom(const std::string& prefix, const std::st
 {
     std::string path = prefix + rootName; //TODO: revise if this can be simplified to avoid costly operations on strings 
     const std::string rootPath = path;
-    Node* root = new Node(rootName, GenerateID(), EConnectionType::Normal, EFileType::Directory);
+    Node* root = new Node(rootName, GenerateID(), EConnectionType::Normal, EFileType::Special); // root node is special for now to prevent unwanted gui behaviour
     std::unique_ptr<Tree> createdTree = std::make_unique<Tree>(root);
     std::queue<std::pair<Node*, const std::string>> directoryQueue;
     DIR* directory = opendir(rootPath.c_str());

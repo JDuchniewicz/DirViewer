@@ -3,6 +3,8 @@
 #include "IFileSystem.hpp"
 #include "Util.hpp"
 
+//TODO: create a thread for it, to not stall drawing (it will be done on main thread)
+//TODO: change interface functions and implement them
 namespace dv
 {
     class UnixFileSystem : public IFileSystem
