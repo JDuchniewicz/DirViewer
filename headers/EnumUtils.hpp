@@ -17,7 +17,7 @@ public:
     using reference = E&;
 
     bool operator==(const EnumIterator& rhs) const { return value == rhs.value; }
-    bool operator!=(const EnumIterator& rhs) const { return !(value == rhs.value); } //check
+    bool operator!=(const EnumIterator& rhs) const { return !(*this == rhs); }
     bool operator<(const EnumIterator& rhs) const { return value < rhs.value; }
     bool operator<=(const EnumIterator& rhs) const { return value <= rhs.value;}
     bool operator>(const EnumIterator& rhs) const { return value > rhs.value; }

@@ -6,6 +6,8 @@
 #include <string>
 #include "dirent.h"
 #include "sys/stat.h"
+#include "fcntl.h"
+#include "unistd.h"
 #include <cerrno>
 
 using namespace dv;
@@ -21,14 +23,13 @@ UnixFileSystem::~UnixFileSystem()
 }
 
 //handle ERRNO properly, consider passing int codes above to signal >error
-int UnixFileSystem::GetDataStartingFrom(const std::string& prefix, const std::string& rootName, std::unique_ptr<Tree>& outTree, unsigned int callerIndex)
+int UnixFileSystem::GetDataStartingFrom(const std::string& srcPath, std::unique_ptr<Tree>& outTree, unsigned int callerIndex)
 {
-    std::string path = prefix + rootName; //TODO: revise if this can be simplified to avoid costly operations on strings 
-    const std::string rootPath = path;
-    Node* root = new Node(rootName, GenerateID(), EConnectionType::Normal, EFileType::Special); // root node is special for now to prevent unwanted gui behaviour
+    std::string path = srcPath; //TODO: revise if this can be simplified to avoid costly operations on strings 
+    Node* root = new Node(srcPath.substr(srcPath.find_last_of('/') + 1), GenerateID(), EConnectionType::Normal, EFileType::Special); // root node is special for now to prevent unwanted gui behaviour
     std::unique_ptr<Tree> createdTree = std::make_unique<Tree>(root);
     std::queue<std::pair<Node*, const std::string>> directoryQueue;
-    DIR* directory = opendir(rootPath.c_str());
+    DIR* directory = opendir(srcPath.c_str());
     if(!directory)
         return errno;
     // handle root directory
@@ -36,10 +37,10 @@ int UnixFileSystem::GetDataStartingFrom(const std::string& prefix, const std::st
     {
         if(strcmp(dirEntry->d_name, ".") == 0 || strcmp(dirEntry->d_name, "..") == 0)
             continue;
-        std::cout << "Read Directory with name: " << dirEntry->d_name << std::endl;
+        std::cout << "Read Node with name: " << dirEntry->d_name << std::endl;
         Node* newNode = new Node(dirEntry->d_name, GenerateID(), EConnectionType::Normal, ConvertFileType(dirEntry->d_type));// add size
         createdTree->AddNode(newNode, root);
-        path = (rootPath + '/' + dirEntry->d_name);
+        path = (srcPath + '/' + dirEntry->d_name);
         if(dirEntry->d_type == DT_DIR)
         {
             std::cout << "Added directory with path: " << path <<std::endl;
@@ -103,6 +104,42 @@ int UnixFileSystem::GetDataStartingFrom(const std::string& prefix, const std::st
     outTree = std::move(createdTree); 
     
     return 0; //return status OK
+}
+
+int UnixFileSystem::MakeFile(const std::string& path, EFileType fType)
+{
+    int ret = 0;
+    std::cout<< "PATH : " << path << std::endl;
+    if(fType == EFileType::File)
+    {
+        ret = open(path.c_str(), O_RDWR | O_EXCL | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH );
+        if(ret < 0)
+        {
+            std::cout << "Creating file failed with error: " << errno << std::endl;
+            return errno;
+        }
+        ret = close(ret);
+        if(ret < 0)
+        {
+            std::cout << "Closing file failed with error: " << errno << std::endl;
+            return errno;
+        }
+    } else if(fType == EFileType::Directory)
+    {
+        ret = mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+        if(ret < 0)
+        {
+            std::cout << "Creating failed with error: " << errno << std::endl;
+            return errno;
+        }
+    } 
+    else
+    {
+        std::cout << "FileType not implemented: " << FileTypeToString(fType) << std::endl;
+        return -1; 
+    }
+
+    return 0;
 }
 
 bool UnixFileSystem::Write(unsigned int callerIndex)

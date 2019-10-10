@@ -106,3 +106,14 @@ TreeSpan Tree::GetTreeLevelOrder() const
     }
     return currentSpan;
 }
+
+std::stack<Node*> Tree::GetPathToRootFrom(Node* from) const
+{
+    std::stack<Node*> nodes;
+    while(from != Root)
+    {
+        nodes.push(from);
+        from = from->Parent;
+    }
+    return nodes;
+}

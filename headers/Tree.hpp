@@ -3,6 +3,7 @@
 #include "Util.hpp"
 #include <string>
 #include <vector>
+#include <stack>
 
 namespace dv
 {
@@ -31,6 +32,7 @@ namespace dv
             void AddNode(Node* node, Node* parent); //for adding new nodes when parent node pointer is known
             bool RemoveNode(unsigned int ID); //add removing discriminator
             TreeSpan GetTreeLevelOrder() const;
+            std::stack<Node*> GetPathToRootFrom(Node* from) const;
         private:
             Node* FindNode(unsigned int ID);
             Node* Root;

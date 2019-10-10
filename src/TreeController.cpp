@@ -1,7 +1,9 @@
 #include "TreeController.hpp"
 #include "Tree.hpp"
+#include "EnumUtils.hpp"
 #include "imgui.h"
 #include <cstdlib>
+#include <stack>
 
 #include <iostream> //for debug
 
@@ -25,7 +27,8 @@ TreeController::TreeController(std::weak_ptr<IFileSystem> fs, unsigned int index
     CurrentTree->AddNode(new Node("five", GenerateID(), EConnectionType::Normal, EFileType::Directory), oneID);
     CurrentTree->AddNode(new Node("six", GenerateID(), EConnectionType::Normal, EFileType::Directory), threeID);
     #else
-    FileSystem.lock()->GetDataStartingFrom("./", "testDir", CurrentTree, index);
+    RootPath = "./testDir"; //root path will be obtained from modal, or last opened file at this tab
+    FileSystem.lock()->GetDataStartingFrom(RootPath, CurrentTree, index); //FIXME - should be not done in constructor
     #endif
 
     //first draw should assign states of nodes, subsequent redraws, will only update map and redraw
@@ -114,7 +117,7 @@ void TreeController::RedrawTree()//rename do ReDrawTree - because it reconstruct
             {
                 //parentPos += ImVec2(verticalOffset, childOffset); Consider overloading ImVec2 for custom class with operators
                 std::cout << "Drawing node: " << child->Name << " with location x: " << childPos.x << " y: " << childPos.y << std::endl;
-                NodeState childState {childPos};
+                NodeState childState { Clamp(childPos)};
                 auto emplaced = NodeStates.emplace(child, childState);
                 if(!emplaced.second)
                     NodeStates.at(child) = childState;
@@ -137,9 +140,10 @@ void TreeController::DrawTreeConnections() const
             auto childState = NodeStates.at(child);
             if((childState.Flags & ENodeState_Hidden) || (childState.Flags & ENodeState_Detached)) // do not draw paths to hidden or detached nodes
                 continue;
-            EConnectionType connnectionType = child->ConnnectionType; //add different connection types
-            //change line colour to connectionType, moreover when lines are drawn they should pass through centre of whole node( needs to be calculated for each)
-            drawList->AddLine(state.Position, childState.Position, lineColor, 11.0f);
+            //EConnectionType connnectionType = child->ConnnectionType; //add different connection types
+            //change line colour to connectionType, moreover when lines are drawn they should pass through centre of whole node( needs to be calculated for each) TODO: tweak till looks fine
+            drawList->AddLine(ImVec2 { state.Position.x + CalculateMiddle(node->Name, 0.5f).x, state.Position.y },
+                              ImVec2 { childState.Position.x + CalculateMiddle(child->Name, 0.5f).x, childState.Position.y }, lineColor, 11.0f);
         }
     }
 }
@@ -176,8 +180,7 @@ void TreeController::DrawNode(Node* node, NodeState& state)
     ImGui::Begin(node->Name.c_str(), nullptr, windowFlags);
 
     ImVec2 buttonSize = ImGui::CalcTextSize(node->Name.c_str());
-    buttonSize.x *= 1.5f;
-        buttonSize.y *= 1.5f;
+    buttonSize *= 1.5f;
 
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 25.0f);
     ImGui::Button(node->Name.c_str(), buttonSize);
@@ -213,52 +216,110 @@ void TreeController::DrawNode(Node* node, NodeState& state)
     }
      
    if(!(state.Flags & (ENodeState_Hidden | ENodeState_Detached)))
-        DrawContextMenu(node, state, location);
+        DrawContextMenu(node, state);
 
     ImGui::PopStyleVar();
     ImGui::End(); 
 }
 
-void TreeController::DrawContextMenu(Node* node, NodeState& state, ImVec2 nodeLocation)
+void TreeController::DrawContextMenu(Node* node, NodeState& state)
 {
     // We want to draw context menu only when node has been rightclicked and keep it open until user clicks somewhere else or selects one option
     // then perform correct operation on node reparenting it when done
-    if(ImGui::BeginPopupContextItem())
+
+    //TODO: enum or what?
+    unsigned int choice = 0;
+    if(ImGui::BeginPopupContextItem(FileTypeToString(node->Type)))
     {
-        // print details about this folder as well as some options that can be changed
-        ImGui::Text(FileTypeToString(node->Type)); //Add on hover behaviour?
         ImGui::Text("Size: %lu", node->Size);
         if(!(state.Flags & ENodeState_Collapsed))
         {
-            if(ImGui::Button("Collapse"))
-            {
-                // Only root node is collapsed, rest is hidden because we cannot uncollapse just one of them (yet?)
-                state.Flags |= ENodeState_Collapsed;
-                ProcessForEachSubNode(node, 
-                [this](Node* child){ NodeStates.at(child).Flags |= ENodeState_Hidden; 
-                std::cout << "Collapsing Node: " << child->Name << std::endl;});
-            }
+            if(ImGui::MenuItem("Collapse")) choice = 1;
         }
-        else
-        {
-            if(ImGui::Button("Expand"))
-            {
-                state.Flags ^= ENodeState_Collapsed;
-                ProcessForEachSubNode(node, 
-                [this](Node* child){ NodeStates.at(child).Flags ^= ENodeState_Hidden; 
-                std::cout << "Expanding Node: " << child->Name << std::endl;});
-            }
+        else if(ImGui::MenuItem("Expand")) choice = 2;
+        // Special nodes are non-movable
+        if(node->Type != EFileType::Special) { if(ImGui::MenuItem("Move")) choice = 3; }
+        if(ImGui::MenuItem("Remove")) choice = 4;
+        if(ImGui::MenuItem("Add new")) choice = 5;
 
-        }
-        if(ImGui::Button("Move"))
-        {
-            // for now only parent is detached, children are hidden
-            state.Flags |= ENodeState_Detached;
-        }
-        if(ImGui::Button("Remove"))
-        {
-
-        }
         ImGui::EndPopup();
     }
+    switch(choice)
+    {
+        case 1:
+            // Only root node is collapsed, rest is hidden because we cannot uncollapse just one of them (yet?)
+            state.Flags |= ENodeState_Collapsed;
+            ProcessForEachSubNode(node, 
+            [this](Node* child){ NodeStates.at(child).Flags |= ENodeState_Hidden; 
+            std::cout << "Collapsing Node: " << child->Name << std::endl;});
+            break;
+        case 2:
+            state.Flags ^= ENodeState_Collapsed;
+            ProcessForEachSubNode(node, 
+            [this](Node* child){ NodeStates.at(child).Flags ^= ENodeState_Hidden; 
+            std::cout << "Expanding Node: " << child->Name << std::endl;});
+            break;
+        case 3:
+            // for now only parent is detached, children are hidden
+            state.Flags |= ENodeState_Detached;
+            break;
+        case 4:
+            break;
+        case 5:
+            ImGui::OpenPopup("Add new");
+            break;
+        default:
+            break;
+    }
+    if(ImGui::BeginPopupModal("Add new", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings))
+    {
+        static char name[128] = ""; //FIXE magic number and static, could be done better (not cleared on exit)
+        static char* currentItem = nullptr;
+        static EFileType fType = EFileType::Invalid;
+        ImGui::Text("Add new file");
+        ImGui::InputText("Name", name,  IM_ARRAYSIZE(name));
+        if(ImGui::BeginCombo("File Type", currentItem))
+        {
+            for(auto fileType : util::IterateEnum<EFileType>())
+            {
+                bool isSelected = (currentItem == FileTypeToString(fileType));
+                if(ImGui::Selectable(FileTypeToString(fileType), isSelected))
+                {
+                    ImGui::ClearActiveID();
+                    currentItem = const_cast<char*>(FileTypeToString(fileType));
+                    fType = fileType;
+                }
+            }
+            std::cout << "selected filetype: " << FileTypeToString(fType)<< std:: endl;
+            ImGui::EndCombo();
+        }
+        if(ImGui::Button("Add"))
+        {
+            if(FileSystem.lock()->MakeFile(StringPathFrom(node) + name, fType) == 0) // handle error codes by signaling to user
+            {
+                Node* newNode = new Node(name, GenerateID(), EConnectionType::Normal, fType);
+                CurrentTree->AddNode(newNode, node);
+                NodeStates.emplace(newNode, NodeState({0,0})); // parent flags?, something wrong with loading it, SEGFAULTS on new load
+                NeedsRedrawing = true;
+            }
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if(ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+}
+
+std::string TreeController::StringPathFrom(Node* from) const
+{
+    std::string path = RootPath + '/';
+    std::stack<Node*> nodePath = CurrentTree->GetPathToRootFrom(from);
+    while(!nodePath.empty())
+    {
+        Node* current = nodePath.top();
+        nodePath.pop();
+        path += current->Name + '/';
+    }
+    std::cout << "Root path to node" << path << std::endl; //TODO: add remapping to absolute path by using CWD
+    return path;
 }

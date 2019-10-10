@@ -19,7 +19,7 @@ namespace dv
             void RedrawTree(); // if calculations are too severe, maybe push redrawing logic to a different thread
             void DrawTreeConnections() const;
             void DrawNode(Node* node, NodeState& state);
-            void DrawContextMenu(Node* node, NodeState& state, ImVec2 nodeLocation);
+            void DrawContextMenu(Node* node, NodeState& state);
             void Update();
 
 
@@ -39,11 +39,13 @@ namespace dv
                         queue.push(child);
                 }
             }
+            std::string StringPathFrom(Node* from) const;
             std::unique_ptr<Tree> CurrentTree;
             std::weak_ptr<IFileSystem> FileSystem;
             std::unordered_map<Node*, NodeState> NodeStates; // IF this will be too much of a bottleneck, just store location in node lel
             bool NeedsRedrawing = true;
             
+            std::string RootPath;
             float screenX = 0.0f, screenY = 0.0f;
             unsigned int Index;
     };

@@ -24,13 +24,16 @@ namespace dv
     };
 
     //For "." and ".." OR for something completely different as these two are not needed
+    // SPECIAL is currently for root only SPECIAL nodes are not movable
+    // _COUNT is for compatibility with EnumIterator helper class
     #define E_FILE_TYPE \
     X(File) \
     X(Directory) \
     X(Symlink) \
     X(Special) \
     X(Other) \
-    X(Invalid)
+    X(Invalid) \
+    X(_COUNT)
 
     #define X(name) name,
     #define E_FILE_TYPE_NAME EFileType
@@ -57,24 +60,35 @@ namespace dv
         return ++maxID;
     }
 
-    static inline ImVec2 Clamp(const ImVec2 vec) //TODO: add bounds and make clamping smart taking them into account
-    {
-        return ImVec2 { std::clamp(vec.x, 0.0f, screenSizeX), std::clamp(vec.y, 0.0f, screenSizeY) };
-    }
-
+    // IMGUI EXTENSIONS
     // Hackish, as most things related to dragging in imgui
     static inline bool IsItemHoveredFor(float duration) { return GImGui->HoveredIdTimer >= duration; }
 
     inline auto operator+=(ImVec2& a, ImVec2 b) { a.x += b.x; a.y += b.y; }
     inline auto operator-=(ImVec2& a, ImVec2 b) { a.x -= b.x; a.y -= b.y; }
+    template<typename T>
+    auto operator*=(ImVec2& a, T m) { a.x *= m; a.y *= m; }
+    template<typename T>
+    auto operator/(ImVec2 a, T d) { return ImVec2 { a.x / d, a.y / d}; }
     inline auto operator-(ImVec2 a, ImVec2 b) { return ImVec2 { a.x - b.x, a.y - b.y }; }
     inline auto operator+(ImVec2 a, ImVec2 b) { return ImVec2 { a.x + b.x, a.y + b.y }; }
     inline std::ostream& operator<<(std::ostream& ostream, const ImVec2 a) { ostream<< "{ " << a.x << ", " << a.y << " }"; return ostream; }
 
-    // each node has only one connection to itself
-    // hence storing node connection type in it
+
+    static inline ImVec2 Clamp(const ImVec2 vec) //TODO: add bounds and make clamping smart taking them into account
+    {
+        return ImVec2 { std::clamp(vec.x, 0.0f, screenSizeX), std::clamp(vec.y, 0.0f, screenSizeY) };
+    }
+    
+    static inline ImVec2 CalculateMiddle(const std::string& name, float multiplier)
+    {
+        ImVec2 textSize = ImGui::CalcTextSize(name.c_str());
+        textSize *= multiplier;
+        return textSize / 2.0f;
+    }
 
     // TODO: this should be changed to something more conformant with newer C++ instead of old C-style enums
+    // as well as more extensible (not just one set of operations)
     enum ENodeStateFlags
     {
         ENodeState_None             = 0,
