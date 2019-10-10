@@ -264,6 +264,7 @@ void TreeController::DrawContextMenu(Node* node, NodeState& state)
             state.Flags |= ENodeState_Detached;
             break;
         case 4:
+            ImGui::OpenPopup("Remove");
             break;
         case 5:
             ImGui::OpenPopup("Add new");
@@ -274,7 +275,7 @@ void TreeController::DrawContextMenu(Node* node, NodeState& state)
     if(ImGui::BeginPopupModal("Add new", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings))
     {
         static char name[128] = ""; //FIXE magic number and static, could be done better (not cleared on exit)
-        static char* currentItem = nullptr;
+        static char* currentItem = nullptr; //statics should be fixed, or reseted apropriately (it can be ommited by creating a state field for each node which is maintained only on-per controller basis)
         static EFileType fType = EFileType::Invalid;
         ImGui::Text("Add new file");
         ImGui::InputText("Name", name,  IM_ARRAYSIZE(name));
@@ -295,14 +296,29 @@ void TreeController::DrawContextMenu(Node* node, NodeState& state)
         }
         if(ImGui::Button("Add"))
         {
-            if(FileSystem.lock()->MakeFile(StringPathFrom(node) + name, fType) == 0) // handle error codes by signaling to user
+            if(FileSystem.lock()->MakeFile(StringPathFrom(node) + '/' + name, fType) == 0) // handle error codes by signaling to user with another color
             {
                 Node* newNode = new Node(name, GenerateID(), EConnectionType::Normal, fType);
                 CurrentTree->AddNode(newNode, node);
-                NodeStates.emplace(newNode, NodeState({0,0})); // parent flags?, something wrong with loading it, SEGFAULTS on new load
+                NodeStates.emplace(newNode, NodeState({0,0}));
                 NeedsRedrawing = true;
             }
             ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if(ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+    if(ImGui::BeginPopupModal("Remove", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings))
+    {
+        ImGui::Text("Remove current Node?");
+        if(ImGui::Button("Remove"))
+        {
+            if(FileSystem.lock()->Remove(StringPathFrom(node), node->Type) == 0)
+            {
+                CurrentTree->RemoveNode(node->ID);
+                NodeStates.erase(node); //invalidated reference causes SIGSEGV, so we cannot access it further
+            } //else inform about failing
         }
         ImGui::SameLine();
         if(ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
@@ -320,6 +336,7 @@ std::string TreeController::StringPathFrom(Node* from) const
         nodePath.pop();
         path += current->Name + '/';
     }
+    path.pop_back();
     std::cout << "Root path to node" << path << std::endl; //TODO: add remapping to absolute path by using CWD
     return path;
 }

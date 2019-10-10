@@ -17,10 +17,7 @@ namespace dv
 
         virtual int MakeFile(const std::string& path, EFileType fType) = 0;
 
-     //   virtual int Remove(const std::string& prefix, const std::string& name) = 0;
-
-        //Write current changes in filesystem tree hierarchy 
-        virtual bool Write(unsigned int callerIndex) = 0;
+        virtual int Remove(const std::string& path, EFileType fType) = 0;
 
         // Refresh current system state (maybe something has changed outside)
         virtual bool RefreshState() = 0;

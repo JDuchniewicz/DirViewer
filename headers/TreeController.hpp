@@ -1,5 +1,5 @@
 #pragma once
- 
+
 #include <unordered_map>
 #include <memory>
 #include <queue> //TODO: group includes together or not include them everywhere

@@ -142,11 +142,25 @@ int UnixFileSystem::MakeFile(const std::string& path, EFileType fType)
     return 0;
 }
 
-bool UnixFileSystem::Write(unsigned int callerIndex)
+int UnixFileSystem::Remove(const std::string& path, EFileType fType)
 {
-
-    return true;
+    int ret = 0;
+    std::cout<< "PATH : " << path << std::endl;
+    if(fType == EFileType::Directory)
+    {
+        ret = rmdir(path.c_str());
+    } else
+    {
+        ret = unlink(path.c_str());
+    }
+    if(ret < 0)
+    {
+        std::cout << "Removing failed with error: " << errno << std::endl;
+        return errno;
+    }
+    return 0;
 }
+
 
 bool UnixFileSystem::RefreshState()
 {

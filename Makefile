@@ -40,3 +40,5 @@ $(EXE): $(OBJS)
 
 clean:
 	rm -rf $(EXE) $(OBJS)
+
+.PHONY: clean
