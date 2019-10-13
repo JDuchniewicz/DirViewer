@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <memory>
 #include <queue> //TODO: group includes together or not include them everywhere
+#include <vector>
 #include "Util.hpp"
 #include "Node.hpp"
 #include "IFileSystem.hpp" 
@@ -39,10 +40,14 @@ namespace dv
                         queue.push(child);
                 }
             }
+
+            void UpdateTreeNodeStates();
+            bool MoveNode(Node* from, Node* to);
             std::string StringPathFrom(Node* from) const;
             std::unique_ptr<Tree> CurrentTree;
             std::weak_ptr<IFileSystem> FileSystem;
-            std::unordered_map<Node*, NodeState> NodeStates; // IF this will be too much of a bottleneck, just store location in node lel
+            std::unordered_map<Node*, NodeState> NodeStates;
+            std::vector<std::tuple<Node*, Node*, EOperationType>> NodeUpdateList;
             bool NeedsRedrawing = true;
             
             std::string RootPath;

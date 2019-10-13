@@ -142,6 +142,35 @@ int UnixFileSystem::MakeFile(const std::string& path, EFileType fType)
     return 0;
 }
 
+int UnixFileSystem::CloneDirectory(const std::string& srcPath, const std::string& dstPath)
+{
+    struct stat st;
+    if(stat(srcPath.c_str(), &st) < 0)
+    {
+        std::cout << "Cannot stat sourcefile, error: " << errno << std::endl;
+        return errno;
+    }
+    if(mkdir(dstPath.c_str(), st.st_mode) < 0)
+    {
+        std::cout << "Cannot clone directory, error: " << errno << std::endl;
+        return errno;
+    }
+    return 0;
+}
+
+int UnixFileSystem::Move(const std::string& srcPath, const std::string& dstPath)
+{
+    // for files on the same FS we can safely use rename Unix api call
+    int ret = 0;
+    std::cout << "Move from: " << srcPath << " to: " <<dstPath << std::endl;
+    if(rename(srcPath.c_str(), dstPath.c_str()) < 0)
+    {
+        std::cout << "Moving failed with error: " << errno << std::endl;
+        return errno;
+    }
+    return ret;
+}
+
 int UnixFileSystem::Remove(const std::string& path, EFileType fType)
 {
     int ret = 0;

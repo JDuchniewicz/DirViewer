@@ -14,6 +14,8 @@ namespace dv
         ~UnixFileSystem();
         virtual int GetDataStartingFrom(const std::string& srcPath, std::unique_ptr<Tree>& outTree, unsigned int callerIndex) override;
         virtual int MakeFile(const std::string& path, EFileType fType) override;
+        virtual int CloneDirectory(const std::string& srcPath, const std::string& dstPath) override;
+        virtual int Move(const std::string& srcPath, const std::string& dstPath) override;
         virtual int Remove(const std::string& path, EFileType fType) override;
         virtual bool RefreshState() override;
         virtual bool ObtainAdditionalData() override;

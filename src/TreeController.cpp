@@ -64,6 +64,9 @@ void TreeController::Update()
     //Probably push list of nodes that need to be redrawn
     DrawTreeConnections();
     ImGui::End();
+
+    if(NeedsRedrawing)
+        UpdateTreeNodeStates();
 }
 
 //Needs to be drawn in a better way, with 2 levels of depth nodes are drawn outside of screen
@@ -94,7 +97,7 @@ void TreeController::RedrawTree()//rename do ReDrawTree - because it reconstruct
     current.y += verticalOffset;
 
     //iterate through all nodes at higher level and draw each of their children with proper distance
-    for(size_t i = 0; i < treeSpan.LevelNodeCount.size() - 1; ++i)
+    for(size_t i = 0; i < treeSpan.LevelNodeCount.size() - 1; ++i) 
     {
         float horizontalOffset = std::max((std::max(screenX * 0.65f, 0.0f)) / treeSpan.LevelNodeCount.at(i + 1), 50.0f); //calculate for next level
         std::cout << "horizontal offset" << horizontalOffset <<std::endl;
@@ -103,7 +106,7 @@ void TreeController::RedrawTree()//rename do ReDrawTree - because it reconstruct
         {
             Node* parent = treeSpan.Nodes.at(currentParentIndex + j);
             ImVec2 parentPos = NodeStates.at(parent).Position; //TODO: think if this can be optimised?
-            float childOffset = 0.0f;
+            float childOffset = 0.0f;//FIXME: this needs fixes for various cases, not very robust
             if(parent->Children.size() % 2 == 0)
                 childOffset = -( -0.5f + (parent->Children.size() / 2.0f)) * horizontalOffset; //leftmost horizontal offset (starts negative)
             else if(parent->Children.size() > 1)
@@ -115,7 +118,6 @@ void TreeController::RedrawTree()//rename do ReDrawTree - because it reconstruct
             childPos.y += verticalOffset;
             for(const auto& child : parent->Children)
             {
-                //parentPos += ImVec2(verticalOffset, childOffset); Consider overloading ImVec2 for custom class with operators
                 std::cout << "Drawing node: " << child->Name << " with location x: " << childPos.x << " y: " << childPos.y << std::endl;
                 NodeState childState { Clamp(childPos)};
                 auto emplaced = NodeStates.emplace(child, childState);
@@ -186,7 +188,7 @@ void TreeController::DrawNode(Node* node, NodeState& state)
     ImGui::Button(node->Name.c_str(), buttonSize);
 
     // BUTTON INPUT HANDLING SECTION
-    if(ImGui::IsItemHovered() && IsItemHoveredFor(HOVERING_PIN_DURATION))
+    if(ImGui::IsItemHovered() && IsItemHoveredFor(HOVERING_PIN_DURATION) && (node->Type == EFileType::Directory || node->Type == EFileType::Special) )
     {
         std::cout << "Hovered: " << node->Name << std::endl;
         auto it = std::find_if(NodeStates.begin(), NodeStates.end(), [&](auto&& nodeState)
@@ -195,11 +197,17 @@ void TreeController::DrawNode(Node* node, NodeState& state)
         });
         if(it != NodeStates.end())
         {
-            Node* toParent = it->first;
-            CurrentTree->AddNode(toParent, node);
-            it->second.Flags ^= ENodeState_Detached;
-            NeedsRedrawing = true;
-            // TODO: add filesystem call MOVE(from , to)
+            if(it->first->Parent == node)
+            {
+                it->second.Flags ^= ENodeState_Detached;
+                NeedsRedrawing = true;
+            }
+            else if(MoveNode(it->first, node))
+            {
+                NodeUpdateList.push_back(std::tuple(it->first, node, EOperationType::Reparent));
+                it->second.Flags ^= ENodeState_Detached;
+                NeedsRedrawing = true;
+            }
         }
     }
 
@@ -240,7 +248,10 @@ void TreeController::DrawContextMenu(Node* node, NodeState& state)
         // Special nodes are non-movable
         if(node->Type != EFileType::Special) { if(ImGui::MenuItem("Move")) choice = 3; }
         if(ImGui::MenuItem("Remove")) choice = 4;
-        if(ImGui::MenuItem("Add new")) choice = 5;
+        if(node->Type == EFileType::Directory)
+        {
+            if(ImGui::MenuItem("Add new")) choice = 5;
+        }
 
         ImGui::EndPopup();
     }
@@ -298,9 +309,7 @@ void TreeController::DrawContextMenu(Node* node, NodeState& state)
         {
             if(FileSystem.lock()->MakeFile(StringPathFrom(node) + '/' + name, fType) == 0) // handle error codes by signaling to user with another color
             {
-                Node* newNode = new Node(name, GenerateID(), EConnectionType::Normal, fType);
-                CurrentTree->AddNode(newNode, node);
-                NodeStates.emplace(newNode, NodeState({0,0}));
+                NodeUpdateList.push_back(std::tuple(new Node(name, GenerateID(), EConnectionType::Normal, fType), node, EOperationType::Add));
                 NeedsRedrawing = true;
             }
             ImGui::CloseCurrentPopup();
@@ -316,14 +325,91 @@ void TreeController::DrawContextMenu(Node* node, NodeState& state)
         {
             if(FileSystem.lock()->Remove(StringPathFrom(node), node->Type) == 0)
             {
-                CurrentTree->RemoveNode(node->ID);
-                NodeStates.erase(node); //invalidated reference causes SIGSEGV, so we cannot access it further
+                NodeUpdateList.push_back(std::tuple(node, nullptr, EOperationType::Remove));
+                NeedsRedrawing = true;
             } //else inform about failing
         }
         ImGui::SameLine();
         if(ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
         ImGui::EndPopup();
     }
+}
+
+void TreeController::UpdateTreeNodeStates()
+{
+    for(auto& [node, parent, operation] : NodeUpdateList)
+    {
+        if(operation == EOperationType::Add)
+        {
+            CurrentTree->AddNode(node, parent);
+            NodeStates.emplace(node, NodeState({0,0}));
+        } else if(operation == EOperationType::Remove)
+        {
+            CurrentTree->RemoveNode(node->ID);
+            NodeStates.erase(node);
+        } else if(operation == EOperationType::Reparent)
+        {
+            CurrentTree->AddNode(node, parent);
+        }
+    }
+}
+
+//TODO: optimize, too many structures and probably too hackish
+bool TreeController::MoveNode(Node* from, Node* to)
+{
+    auto lockedFS = FileSystem.lock();
+    std::unordered_map<Node*, std::string> newPaths;
+    std::queue<Node*> directories;
+    std::vector<Node*> otherNodes;
+    std::vector<Node*> toRemove;
+    newPaths.emplace(from, StringPathFrom(to) + '/' + from->Name);
+    if(from->Type == EFileType::Directory)
+    {
+        directories.push(from);
+        toRemove.push_back(from);
+        while(!directories.empty())
+        {
+            Node* current = directories.front();
+            directories.pop();
+            auto currentPath = newPaths.at(current);
+            if(lockedFS->CloneDirectory(StringPathFrom(current), currentPath) != 0)
+                return false; // perform some cleanup
+            for(const auto& child : current->Children)
+            {
+                if(child->Type == EFileType::Directory)
+                {
+                    directories.push(child);
+                    toRemove.push_back(child);
+                    newPaths.emplace(child, currentPath + '/' + child->Name);
+                    std::cout<< "Creating directory: " << currentPath + '/' + child->Name << std::endl;
+                }
+                else
+                    otherNodes.push_back(child);
+            }
+        }
+        for(auto& current : otherNodes)
+        {
+            std::cout<< "Moving file: " << StringPathFrom(current) << " to " << newPaths.at(current->Parent) + '/' + current->Name << std::endl;
+            if(lockedFS->Move(StringPathFrom(current), newPaths.at(current->Parent) + '/' + current->Name) != 0)
+                return false;
+        }
+    }
+    else //special case for just one file
+    {
+        std::cout<< "Moving file: " << StringPathFrom(from) << " to " << newPaths.at(from) << std::endl;
+        if(lockedFS->Move(StringPathFrom(from), newPaths.at(from)) != 0)
+            return false;
+    }
+
+    for(auto it = toRemove.rbegin(); it != toRemove.rend(); ++it) //TODO: add reverse ranged for util
+    {
+        auto current = *it;
+        std::cout<< "Removing directory: " << StringPathFrom(current) << std::endl;
+        if(lockedFS->Remove(StringPathFrom(current), EFileType::Directory) != 0)
+            return false;
+    }
+    // cleanup after old nodes
+    return true;
 }
 
 std::string TreeController::StringPathFrom(Node* from) const

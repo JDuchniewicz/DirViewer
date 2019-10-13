@@ -13,9 +13,11 @@ namespace dv
         //TODO: document API
         virtual int GetDataStartingFrom(const std::string& srcPath, std::unique_ptr<Tree>& outTree, unsigned int callerIndex) = 0;
 
-    //    virtual int Move(const std::string& srcPath, const std::string& dstPath) = 0;
-
         virtual int MakeFile(const std::string& path, EFileType fType) = 0;
+
+        virtual int CloneDirectory(const std::string& srcPath, const std::string& dstPath) = 0;
+        
+        virtual int Move(const std::string& srcPath, const std::string& dstPath) = 0;
 
         virtual int Remove(const std::string& path, EFileType fType) = 0;
 

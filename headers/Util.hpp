@@ -14,6 +14,14 @@ namespace dv
         static unsigned int maxID = 0;
     }
 
+    enum class EOperationType
+    {
+        Add = 0,
+        Remove,
+        Reparent,
+        Invalid
+    };
+
     enum class EConnectionType
     {
         Normal = 0,
