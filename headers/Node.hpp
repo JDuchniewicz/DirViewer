@@ -1,9 +1,7 @@
 #pragma once
 
+#include <Defines.hpp>
 #include "Util.hpp"
-#include "imgui.h"
-#include <string>
-#include <vector>
 
 namespace dv
 {

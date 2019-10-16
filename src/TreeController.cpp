@@ -1,11 +1,7 @@
 #include "TreeController.hpp"
 #include "Tree.hpp"
 #include "EnumUtils.hpp"
-#include "imgui.h"
-#include <cstdlib>
-#include <stack>
-
-#include <iostream> //for debug
+#include "IterationUtils.hpp"
 
 using namespace dv;
 
@@ -401,9 +397,8 @@ bool TreeController::MoveNode(Node* from, Node* to)
             return false;
     }
 
-    for(auto it = toRemove.rbegin(); it != toRemove.rend(); ++it) //TODO: add reverse ranged for util
+    for(const auto& current : util::Reverse(toRemove))
     {
-        auto current = *it;
         std::cout<< "Removing directory: " << StringPathFrom(current) << std::endl;
         if(lockedFS->Remove(StringPathFrom(current), EFileType::Directory) != 0)
             return false;

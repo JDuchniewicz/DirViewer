@@ -1,5 +1,6 @@
 #pragma once
-#include <iterator>
+
+#include <Defines.hpp>
 
 namespace dv::util {
 // Class allowing iteration over scoped enumerations

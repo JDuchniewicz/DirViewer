@@ -1,6 +1,5 @@
 #include "Tree.hpp"
 #include "Node.hpp"
-#include <queue>
 
 using namespace dv;
 

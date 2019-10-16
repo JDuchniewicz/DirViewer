@@ -1,5 +1,4 @@
 #include "Node.hpp"
-#include <algorithm>
 
 using namespace dv;
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Defines.hpp>
 #include "IFileSystem.hpp"
 #include "Util.hpp"
 

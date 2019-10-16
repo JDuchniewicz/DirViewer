@@ -1,9 +1,6 @@
 #pragma once
 
-#include <unordered_map>
-#include <memory>
-#include <queue> //TODO: group includes together or not include them everywhere
-#include <vector>
+#include <Defines.hpp>
 #include "Util.hpp"
 #include "Node.hpp"
 #include "IFileSystem.hpp" 
@@ -42,6 +39,8 @@ namespace dv
             }
 
             void UpdateTreeNodeStates();
+            // similarly to treeStates there should a single transaction per frame with FS
+            // it should be done before updating tree state and if fails it should inform with proper gui
             bool MoveNode(Node* from, Node* to);
             std::string StringPathFrom(Node* from) const;
             std::unique_ptr<Tree> CurrentTree;

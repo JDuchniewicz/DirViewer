@@ -1,8 +1,7 @@
 #pragma once
-#include "imgui.h"
+
+#include <Defines.hpp>
 #include "imgui_internal.h"
-#include <algorithm>
-#include <iostream>
 
 namespace dv
 {
