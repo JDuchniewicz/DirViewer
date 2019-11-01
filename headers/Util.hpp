@@ -8,11 +8,6 @@ namespace dv
     constexpr auto screenSizeX = 1280.0f;
     constexpr auto screenSizeY = 720.0f;
 
-    namespace
-    {
-        static unsigned int maxID = 0;
-    }
-
     enum class EOperationType
     {
         Add = 0,
@@ -60,11 +55,6 @@ namespace dv
         }
     #undef X
         return "dummy"; //otherwise compiler complains
-    }
-
-    static inline unsigned int GenerateID()
-    {
-        return ++maxID;
     }
 
     // IMGUI EXTENSIONS

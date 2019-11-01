@@ -10,18 +10,16 @@ TreeController::TreeController(std::weak_ptr<IFileSystem> fs, unsigned int index
     //get all data for tree from filesystem
     //for now just create dummy
     #if 0
-    unsigned int rootID = GenerateID();
-    CurrentTree = std::make_unique<Tree>(new Node("root", rootID, EConnectionType::Normal, EFileType::Directory));
-    unsigned int oneID = GenerateID();
-    unsigned int twoID = GenerateID();
-    unsigned int threeID= GenerateID();
-    unsigned int fourID= GenerateID();
-    CurrentTree->AddNode(new Node("one", oneID, EConnectionType::Normal, EFileType::Directory), rootID);
-    CurrentTree->AddNode(new Node("two", twoID, EConnectionType::Normal, EFileType::Directory), rootID);
-    CurrentTree->AddNode(new Node("three", threeID, EConnectionType::Normal, EFileType::Directory), rootID);
-    CurrentTree->AddNode(new Node("four", fourID, EConnectionType::Normal, EFileType::Directory), rootID);
-    CurrentTree->AddNode(new Node("five", GenerateID(), EConnectionType::Normal, EFileType::Directory), oneID);
-    CurrentTree->AddNode(new Node("six", GenerateID(), EConnectionType::Normal, EFileType::Directory), threeID);
+    auto root = new Node("root", EConnectionType::Normal, EFileType::Directory);
+    CurrentTree = std::make_unique<Tree>(root);
+    auto one = new Node("one", EConnectionType::Normal, EFileType::Directory);
+    CurrentTree->AddNode(one, root);
+    CurrentTree->AddNode(new Node("two", EConnectionType::Normal, EFileType::Directory), root);
+    auto three = new Node("three", EConnectionType::Normal, EFileType::Directory);
+    CurrentTree->AddNode(three, root);
+    CurrentTree->AddNode(new Node("four", EConnectionType::Normal, EFileType::Directory), root);
+    CurrentTree->AddNode(new Node("five", EConnectionType::Normal, EFileType::Directory), one);
+    CurrentTree->AddNode(new Node("six", EConnectionType::Normal, EFileType::Directory), three);
     #else
     RootPath = "./testDir"; //root path will be obtained from modal, or last opened file at this tab
     FileSystem.lock()->GetDataStartingFrom(RootPath, CurrentTree, index); //FIXME - should be not done in constructor
@@ -305,7 +303,7 @@ void TreeController::DrawContextMenu(Node* node, NodeState& state)
         {
             if(FileSystem.lock()->MakeFile(StringPathFrom(node) + '/' + name, fType) == 0) // handle error codes by signaling to user with another color
             {
-                NodeUpdateList.push_back(std::tuple(new Node(name, GenerateID(), EConnectionType::Normal, fType), node, EOperationType::Add));
+                NodeUpdateList.push_back(std::tuple(new Node(name, EConnectionType::Normal, fType), node, EOperationType::Add));
                 NeedsRedrawing = true;
             }
             ImGui::CloseCurrentPopup();
@@ -341,13 +339,14 @@ void TreeController::UpdateTreeNodeStates()
             NodeStates.emplace(node, NodeState({0,0}));
         } else if(operation == EOperationType::Remove)
         {
-            CurrentTree->RemoveNode(node->ID);
+            CurrentTree->RemoveNode(node);
             NodeStates.erase(node);
         } else if(operation == EOperationType::Reparent)
         {
             CurrentTree->AddNode(node, parent);
         }
     }
+    NodeUpdateList.clear();
 }
 
 //TODO: optimize, too many structures and probably too hackish

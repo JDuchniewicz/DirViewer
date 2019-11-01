@@ -26,13 +26,12 @@ namespace dv
         public:
             Tree(Node* root);
             ~Tree();
-            void AddNode(Node* node, unsigned int parentID); //for adding additional nodes only?, quite slow 
             void AddNode(Node* node, Node* parent); //for adding new nodes when parent node pointer is known
-            bool RemoveNode(unsigned int ID); //add removing discriminator
+            bool RemoveNode(Node* node); //add removing discriminator
             TreeSpan GetTreeLevelOrder() const;
             std::stack<Node*> GetPathToRootFrom(Node* from) const;
         private:
-            Node* FindNode(unsigned int ID);
+            Node* FindNode(Node* toFind) const;
             Node* Root;
             Node* Dummy; //special kind of node to mark invalid
     };

@@ -18,7 +18,7 @@ UnixFileSystem::~UnixFileSystem()
 int UnixFileSystem::GetDataStartingFrom(const std::string& srcPath, std::unique_ptr<Tree>& outTree, unsigned int callerIndex)
 {
     std::string path = srcPath; //TODO: revise if this can be simplified to avoid costly operations on strings 
-    Node* root = new Node(srcPath.substr(srcPath.find_last_of('/') + 1), GenerateID(), EConnectionType::Normal, EFileType::Special); // root node is special for now to prevent unwanted gui behaviour
+    Node* root = new Node(srcPath.substr(srcPath.find_last_of('/') + 1), EConnectionType::Normal, EFileType::Special); // root node is special for now to prevent unwanted gui behaviour
     std::unique_ptr<Tree> createdTree = std::make_unique<Tree>(root);
     std::queue<std::pair<Node*, const std::string>> directoryQueue;
     DIR* directory = opendir(srcPath.c_str());
@@ -30,7 +30,7 @@ int UnixFileSystem::GetDataStartingFrom(const std::string& srcPath, std::unique_
         if(strcmp(dirEntry->d_name, ".") == 0 || strcmp(dirEntry->d_name, "..") == 0)
             continue;
         std::cout << "Read Node with name: " << dirEntry->d_name << std::endl;
-        Node* newNode = new Node(dirEntry->d_name, GenerateID(), EConnectionType::Normal, ConvertFileType(dirEntry->d_type));// add size
+        Node* newNode = new Node(dirEntry->d_name, EConnectionType::Normal, ConvertFileType(dirEntry->d_type));// add size
         createdTree->AddNode(newNode, root);
         path = (srcPath + '/' + dirEntry->d_name);
         if(dirEntry->d_type == DT_DIR)
@@ -78,7 +78,7 @@ int UnixFileSystem::GetDataStartingFrom(const std::string& srcPath, std::unique_
             if(strcmp(dirEntry->d_name, ".") == 0 || strcmp(dirEntry->d_name, "..") == 0)
                 continue;
             std::cout << "Read Directory with name: " << dirEntry->d_name << std::endl;
-            Node* newNode = new Node(dirEntry->d_name, GenerateID(), EConnectionType::Normal, ConvertFileType(dirEntry->d_type));// add size
+            Node* newNode = new Node(dirEntry->d_name, EConnectionType::Normal, ConvertFileType(dirEntry->d_type));// add size
             createdTree->AddNode(newNode, parent);
             if(dirEntry->d_type == DT_DIR)
             {

@@ -5,7 +5,7 @@ using namespace dv;
 
 Tree::Tree(Node* root) : Root(root)
 {
-    Dummy = new Node("", 0, EConnectionType::Invisible, EFileType::Invalid);
+    Dummy = new Node("", EConnectionType::Invisible, EFileType::Invalid);
 }
 
 Tree::~Tree()
@@ -16,29 +16,14 @@ Tree::~Tree()
     delete Dummy;
 }
 
-void Tree::AddNode(Node* node, unsigned int parentID)
-{
-    if(!Root) 
-    {
-        Root = node;
-        return;
-    }
-    Node* parent = FindNode(parentID);
-    if(!parent)
-        return;
-    parent->Children.push_back(node);
-    node->Reparent(parent);
-}
-
 void Tree::AddNode(Node* node, Node* parent)
 {
    parent->Children.push_back(node);
    node->Reparent(parent);
 }
 
-bool Tree::RemoveNode(unsigned int ID)
+bool Tree::RemoveNode(Node* toRemove)
 {
-    Node* toRemove = FindNode(ID);
     if(toRemove == nullptr)
         return false;
     Node* parent = toRemove->Parent;
@@ -54,7 +39,7 @@ bool Tree::RemoveNode(unsigned int ID)
     return true;
 }
 
-Node* Tree::FindNode(unsigned int ID)
+Node* Tree::FindNode(Node* toFind) const
 {
     //trigger bfs here
     std::queue<Node*> queue;
@@ -63,7 +48,7 @@ Node* Tree::FindNode(unsigned int ID)
     {
         Node* current = queue.front();
         queue.pop();
-        if(current->ID == ID)
+        if(current == toFind)
             return current;
         for(const auto& child : current->Children)
             queue.push(child);

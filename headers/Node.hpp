@@ -8,14 +8,13 @@ namespace dv
     class Node
     {
         public:
-            Node(const std::string& name, unsigned int id, EConnectionType connT, EFileType fType, long size = 4096);
+            Node(const std::string& name, EConnectionType connT, EFileType fType, long size = 4096);
             ~Node();
             void Reparent(Node* newParent);
             void RemoveChild(Node* child);
 
 //all fields public
             std::string Name; // name of current file
-            unsigned int ID;
             EConnectionType ConnnectionType; 
             EFileType Type;
             //permissons?
