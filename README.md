@@ -17,13 +17,13 @@ All libraries are statically compiled to the binary.
 
 ### Current Features
 #### Dragging
-![Dragging](gif/drag.gif)
+![Dragging](gifs/drag.gif)
 #### Collapsing nodes
-![Collapsing](gif/collapse.gif)
+![Collapsing](gifs/collapse.gif)
 #### Moving groups of nodes (like `mv`)
-![Moving](gif/move.gif)
+![Moving](gifs/move.gif)
 #### Adding and removing nodes
-![Add/Remove](gif/addremove.gif)
+![Add/Remove](gifs/addremove.gif)
 
 ## License
 
