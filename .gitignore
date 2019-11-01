@@ -1,5 +1,6 @@
 *.o
 uml/*
-imguiPoC
+DirViewer
 *.ini
+*.d
 

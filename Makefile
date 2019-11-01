@@ -1,7 +1,7 @@
 # First makefile for linux only
 #
 
-EXE = imguiPoC
+EXE = DirViewer
 SRCDIR = src
 SOURCES = $(wildcard $(SRCDIR)/*.cpp)
 SOURCES += libs/imgui/imgui.cpp libs/imgui/imgui_draw.cpp libs/imgui/imgui_widgets.cpp libs/imgui/imgui_demo.cpp
