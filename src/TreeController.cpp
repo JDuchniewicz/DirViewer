@@ -21,7 +21,7 @@ TreeController::TreeController(std::weak_ptr<IFileSystem> fs, unsigned int index
     CurrentTree->AddNode(new Node("five", EConnectionType::Normal, EFileType::Directory), one);
     CurrentTree->AddNode(new Node("six", EConnectionType::Normal, EFileType::Directory), three);
     #else
-    RootPath = "./testDir"; //root path will be obtained from modal, or last opened file at this tab
+    RootPath = "../testDir"; //root path will be obtained from modal, or last opened file at this tab
     FileSystem.lock()->GetDataStartingFrom(RootPath, CurrentTree, index); //FIXME - should be not done in constructor
     #endif
 
